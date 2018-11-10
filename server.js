@@ -15,7 +15,12 @@ app.use(express.json());
 // const db = mongojs(databaseUrl, collections);
 
 // Connect to the Mongo DB
-mongoose.connect("mongodb://localhost/cbsdb", { useNewUrlParser: true });
+// mongoose.connect("mongodb://localhost/cbsdb", { useNewUrlParser: true });
+
+// If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
+let MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/cdsdb";
+
+mongoose.connect(MONGODB_URI);
 
 
 // Scrapping functions
@@ -40,6 +45,7 @@ axios.get("https://minnesota.cbslocal.com/").then((response) => {
     res.send("Scrape Complete");
 });
 });
+
 
 // app.get("/scrape", function(req, res) {
 //     // First, we grab the body of the html with axios
