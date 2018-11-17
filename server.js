@@ -1,27 +1,18 @@
 // Dependencies
 const express = require("express");
-// const mongojs = require("mongojs");
 const mongoose = require("mongoose");
 const axios = require("axios");
 const cheerio = require("cheerio");
 const db = require("./models");
+const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(express.static("public"));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-// Database configuration
-// const databaseUrl = "cbsdb";
-// const collections = ["cbsHeadlines"];
-// const db = mongojs(databaseUrl, collections);
-
-// Connect to the Mongo DB
-// mongoose.connect("mongodb://localhost/cbsdb", { useNewUrlParser: true });
 
 // If deployed, use the deployed database. Otherwise use the local mongoHeadlines database
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost/cdsdb";
-
 mongoose.connect(MONGODB_URI);
-
 
 // Scrapping functions
 app.get("/scrape", (req, res) => {
@@ -30,7 +21,7 @@ axios.get("https://minnesota.cbslocal.com/").then((response) => {
 
     $("a.cbs-thumbnail-link.content-type-video").each((i, element) => {
         let result = {};
-        result.title = $(element).children().text();
+        result.title = $(element).attr("title");
         result.link = $(element).attr("href");
         result.summery = $(element).find("em").text();
 
@@ -42,10 +33,8 @@ axios.get("https://minnesota.cbslocal.com/").then((response) => {
             return res.json(err);
           });
     });
-    res.send("Scrape Complete");
 });
 });
-
 
 //------------------Routes-----------------------------------
 // Main Page
@@ -69,9 +58,6 @@ app.post("/headline/:id", (req, res) => {
     // Create a new Comment and pass the req.body to the entry
     db.Comment.create(req.body)
       .then((dbComment) => {
-        // If a Note was created successfully, find one Article with an `_id` equal to `req.params.id`. Update the Article to be associated with the new Note
-        // { new: true } tells the query that we want it to return the updated User -- it returns the original by default
-        // Since our mongoose query returns a promise, we can chain another `.then` which receives the result of the query
         return db.Headline.findOneAndUpdate({ _id: req.params.id }, { note: dbComment._id }, { new: true });
       })
       .then((dbHeadline) => {
@@ -82,9 +68,8 @@ app.post("/headline/:id", (req, res) => {
       });
   });
 
-// Route for grabbing a specific Headline by id, populate it with it's comment
+// Route for grabbing a specific Headline by id, populate it with it's comments
 app.get("/headline/:id", (req, res) => {
-    // Using the id passed in the id parameter, prepare a query that finds the matching one in our db...
     db.Headline.findOne({ _id: req.params.id })
       .populate("comment")
       .then((dbHeadline) => {
@@ -95,10 +80,6 @@ app.get("/headline/:id", (req, res) => {
       });
   });
 
-
-
-
-// Listen on port 3000
-app.listen(3000, () => {
-    console.log("App running on port 3000!");
+app.listen(PORT, () => {
+    console.log(`App running on port ${PORT}`);
 });
